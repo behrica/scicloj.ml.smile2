@@ -1,26 +1,29 @@
-(ns scicloj.ml.smile2.scicloj.ml.smile2
-  (:require
-   [scicloj.ml.smile.protocols]
-   [scicloj.metamorph.ml.toydata]
+(ns scicloj.ml.smile2.smile2
+  (:require ;[tech.v3.libs.smile.data]
+ ;[smile.classification :as classification]
    [scicloj.metamorph.ml :as ml]
-   [tech.v3.dataset :as ds]
-   [tech.v3.libs.smile.data]
-   [smile.classification :as classification])
-  (:import (smile.data.formula Formula)
-           [smile.base.cart SplitRule]))
+   [scicloj.metamorph.ml.toydata]
+   [tech.v3.dataset :as ds] ;[tech.v3.libs.smile.data]
+   [scicloj.ml.smile2.dataframe]
+   [smile.classification]
 
-
-
-
+   [tech.v3.dataset.column-filters :as cf])
+  (:import
+   [smile.base.cart SplitRule]
+   [smile.classification MLP]
+   [smile.data DataFrame]
+   (smile.data.formula Formula)
+   [smile.data.vector DoubleVector ValueVector]))
 
 
 (defn- train-with-formula [feature-ds target-ds train-fn model-params]
   (let [ds (ds/append-columns feature-ds target-ds)
-        df (tech.v3.libs.smile.data/dataset->smile-dataframe ds)
+        df (scicloj.ml.smile2.dataframe/ds->df ds)
+        
         formula
         (Formula/of
-         (-> target-ds ds/column-names first name)
-         (into-array  (->> feature-ds ds/column-names (map name))))]
+         (-> target-ds ds/column-names first str)
+         (into-array  (->> feature-ds ds/column-names (map str))))]
     
     {:train-type :formula
      :model 
@@ -28,6 +31,8 @@
             formula
             df
             model-params)}))
+
+
 
 (defn- train-with-x-y [feature-ds target-ds train-fn model-params]
   {:train-type :x-y
@@ -37,11 +42,11 @@
            (int-array (-> target-ds vals first))
            model-params)})
 
-
-
 (defn predict-from-formula [model-data ds]
-  (let [df (tech.v3.libs.smile.data/dataset->smile-dataframe ds)]
+  (let [df (scicloj.ml.smile2.dataframe/ds->df   
+            (cf/feature ds))]
     (.predict (:model model-data) df)))
+
 
 (defn- predit-from-x-y [model ds]
   
@@ -56,7 +61,7 @@
   
 
 (defn define-smile-model! [var-definition default-options]
-  
+   
   (let [model-type (keyword "smile2.classification" (name (:symbol var-definition)))]
     (ml/define-model! model-type
       (fn [feature-ds target-ds options]
@@ -78,22 +83,17 @@
         
         )
       (fn [feature-ds thawed-model {:keys [options model-data target-categorical-maps target-columns] :as model}]
-        (let [ds (ds/add-column
-                  
-                  feature-ds
-                  (ds/new-column 
-                   (first target-columns)
-                   (repeat (ds/row-count feature-ds) nil))
-                  )
-              
-              
-              
+        (let [ds-1 (ds/add-column
+
+                    feature-ds
+                    (ds/new-column
+                     (first target-columns)
+                     (repeat (ds/row-count feature-ds) nil)))
+
               prediction
               (case (:train-type model-data)
-                :formula (predict-from-formula model-data ds )
-                :x-y (predit-from-x-y (:model model-data) feature-ds) 
-                )
-              ]
+                :formula (predict-from-formula model-data feature-ds)
+                :x-y (predit-from-x-y (:model model-data) feature-ds))]
           
           (ds/new-dataset
            [( ds/new-column (keyword (first target-columns))
@@ -106,11 +106,15 @@
 
 
 (def var-definitions
-  (map (fn [[s v]]
-         (hash-map :symbol s
-                   :var v
-                   :args-with-options (-> v meta :arglists second)))
-       (ns-publics (find-ns 'smile.classification))))
+  (->> 
+   (ns-publics (find-ns 'smile.classification))
+  ;;  (remove (fn [[k v]] 
+  ;;            (= 'mlp k)))
+   (map (fn [[s v]]
+          (hash-map :symbol s
+                    :var v
+                    :args-with-options (-> v meta :arglists second)))
+        )))
 
 (def default-options
   {'gbm   [500 20 6 5 0.05 0.7]
@@ -133,5 +137,17 @@
  #(define-smile-model! % (get default-options (:symbol %)))
  var-definitions
  )
+
+
+
+
+
+
+
+
+
+
+
+
 
 
