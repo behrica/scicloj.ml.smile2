@@ -7,7 +7,9 @@
   
   (:import
    [smile.data DataFrame]
-   [smile.data.vector ValueVector]
+   [smile.data.vector ValueVector IntVector NullableIntVector NullableBooleanVector 
+    ObjectVector NullableFloatVector NullableLongVector NullableCharVector NullableByteVector
+    StringVector]
    [smile.datasets CPU]
    )
 
@@ -16,14 +18,36 @@
 
 
 (defn value-vector->column [vv-column]
-  (let [vv-type (.. vv-column dtype id name)
+  (def vv-column vv-column)
+  (let [vv-type
+        (.. vv-column dtype id name)
         col-name (.name vv-column)
-        stream
+        the-seq
         (case vv-type
-          "Float" (.doubleStream vv-column)
-          "Double" (.doubleStream vv-column)
-          "Int" (.intStream vv-column))]
-    (ds/new-column col-name (stream-seq! stream))))
+          "Float" (stream-seq! (.doubleStream vv-column))
+          "Double" (stream-seq! (.doubleStream vv-column))
+          "Int" (.intStream vv-column)
+          "Boolean" (map #(case %
+                            0 false
+                            1 true
+                            nil)
+                         (stream-seq! (.intStream vv-column)))
+          "Object" (stream-seq! (.stream vv-column))
+          "Long"  (map long (stream-seq! (.doubleStream vv-column)))
+          "String" (stream-seq! (.stream vv-column))
+          "Char"  (map char (stream-seq! (.intStream vv-column)))
+          "Byte" (stream-seq! (.intStream vv-column))
+          )
+        ]
+    (def the-seq the-seq)
+    (if (contains? #{"Object","String"} vv-type)
+      (ds/new-column col-name the-seq)
+      
+      (ds/new-column col-name the-seq {} 
+                     (stream-seq! (.stream (.getNullMask vv-column)))
+                     ))))
+
+
 
 (defn df->ds [df]
   (ds/new-dataset
@@ -32,33 +56,73 @@
     (.columns df))))
 
 
+(defn- replace-nil [col replacement]
+  (map
+   #(if (nil? %)
+      replacement
+      %)
+   col)
+  )
+
+(defn construct [klass & args]
+  (clojure.lang.Reflector/invokeConstructor klass (into-array Object args)))
+
+(def transformers
+  {:int        [smile.data.vector.NullableIntVector int-array 0]
+   :int16      [smile.data.vector.NullableShortVector short-array 0]
+   :int64      [smile.data.vector.NullableLongVector  long-array 0]
+   :float64    [smile.data.vector.NullableDoubleVector double-array 0] 
+   :float32    [smile.data.vector.NullableFloatVector  float-array 0]
+   :char       [smile.data.vector.NullableCharVector  char-array \0]
+   :boolean    [smile.data.vector.NullableBooleanVector boolean-array false]
+   :string     [smile.data.vector.StringVector nil nil]
+   :int8       [smile.data.vector.NullableByteVector byte-array 0]
+   })
+
+(defn col->value-vector [col]
+  (let [bs (java.util.BitSet.)
+        col-name (str (-> col meta :name))
+        datatype (-> col meta :datatype)
+        [clazz array-fn replacement] (get transformers datatype
+                                          [smile.data.vector.ObjectVector nil nil])]
+    (run!
+     (fn [idx]
+       (.set bs idx true))
+     (ds/missing col))
+
+    
+    (if (nil? clazz)
+      (throw (IllegalArgumentException. (format "datatype %s is not supported" datatype)))
+      
+      (case (str (.getName clazz))
+        "smile.data.vector.ObjectVector" (ObjectVector. col-name (object-array col))
+        "smile.data.vector.StringVector" (StringVector. col-name (into-array String col))
 
 
+        (construct clazz
+                   col-name
+                   (array-fn (replace-nil col replacement))
+                   bs)))))
 
 
 
 (defn ds->df [ds]
-  (def ds ds)
   (DataFrame.
    (into-array ValueVector
                (map
                 (fn [col]
-                  (def col col)
-                  (let [col-name (str (-> col meta :name))
-                        convert-fn
-                        (case
-                         (-> col meta :datatype)
-                          :int16  dt/->int-array
-                          :float64 dt/->double-array
-                          )
-                        
-                        ]
-                    (def convert-fn convert-fn)
-                    (def col-name col-name)
-                    (ValueVector/of col-name  
-                                    (convert-fn col))))
+                  (println :col col)
+                  (col->value-vector col)
+                  )
 
                 (ds/columns ds)))))
+
+
+
+
+
+
+
 
 
 (comment
