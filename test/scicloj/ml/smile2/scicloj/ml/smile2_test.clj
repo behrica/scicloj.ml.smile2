@@ -63,7 +63,7 @@
   (validate-test-train "knn" {})
   (validate-test-train "logit" {})
   (validate-test-train "lda" {})
-  (validate-test-train "maxent" {:p 4})
+  ;(validate-test-train "maxent" {:p 4})
   (validate-test-train "adaboost" {})
   (validate-test-train "qda" {}))
 

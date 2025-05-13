@@ -10,9 +10,8 @@
          (-> ds
 
              (dataframe/ds->df)
-
-             (dataframe/df->ds)
-             ))))
+             
+             (dataframe/df->ds)))))
 
 
 
@@ -81,34 +80,28 @@
 
                   })))
 
-(deftest specific-data 
+(deftest specific-data
   (is
    (->
     (dataframe/ds->df (ds/->dataset {"k" [\a \b \c]}))
     .dtypes
     first
-    .isChar
-    ))
-  
+    .isChar))
+
   (is
    (->
     (dataframe/ds->df (ds/->dataset {"k" (byte-array (map byte [0 1 2]))}))
     .dtypes
     first
     .isByte))
-  
-  (is 
+
+  (is
    (->
     (dataframe/ds->df (ds/->dataset {"k" (short-array (map short [0 1 2]))}))
     .dtypes
     first
-    .isShort))
-  )
+    .isShort)))
 
 
 
 
-(->
- (ds/->dataset {:a (short-array (map short [0 1 2]))})
- :a
- meta)

@@ -4,21 +4,16 @@
    [scicloj.metamorph.ml.toydata]
    [tech.v3.dataset :as ds]
    [tech.v3.datatype :as dt])
-  
+
   (:import
    [smile.data DataFrame]
-   [smile.data.vector ValueVector IntVector NullableIntVector NullableBooleanVector 
+   [smile.data.vector ValueVector IntVector NullableIntVector NullableBooleanVector
     ObjectVector NullableFloatVector NullableLongVector NullableCharVector NullableByteVector
     StringVector]
-   [smile.datasets CPU]
-   )
-
-  
-  )
+   [smile.datasets CPU]))
 
 
 (defn value-vector->column [vv-column]
-  (def vv-column vv-column)
   (let [vv-type
         (.. vv-column dtype id name)
         col-name (.name vv-column)
@@ -37,17 +32,15 @@
           "String" (stream-seq! (.stream vv-column))
           "Char"  (map char (stream-seq! (.intStream vv-column)))
           "Byte" (stream-seq! (.intStream vv-column))
+          "Short" (stream-seq! (.intStream vv-column))
           )
         ]
-    (def the-seq the-seq)
     (if (contains? #{"Object","String"} vv-type)
       (ds/new-column col-name the-seq)
       
       (ds/new-column col-name the-seq {} 
                      (stream-seq! (.stream (.getNullMask vv-column)))
                      ))))
-
-
 
 (defn df->ds [df]
   (ds/new-dataset
@@ -61,8 +54,7 @@
    #(if (nil? %)
       replacement
       %)
-   col)
-  )
+   col))
 
 (defn construct [klass & args]
   (clojure.lang.Reflector/invokeConstructor klass (into-array Object args)))
@@ -111,9 +103,7 @@
    (into-array ValueVector
                (map
                 (fn [col]
-                  (println :col col)
-                  (col->value-vector col)
-                  )
+                  (col->value-vector col))
 
                 (ds/columns ds)))))
 
