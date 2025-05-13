@@ -1,6 +1,6 @@
 # scicloj.ml.smile2/scicloj.ml.smile2
 
-Integration of Java Smile (> v.2.6) into `metamorh.ml`
+Plugin of Java Smile (> v.2.6) into (metamorph.ml)[https://github.com/scicloj/metamorph.ml]
 
 See here for the integation of version 2.6: 
 https://github.com/scicloj/scicloj.ml.smile
