@@ -1,17 +1,15 @@
 (ns scicloj.ml.smile2.dataframe
   (:require
-   [tech.v3.dataset :as ds]
-   )
+   [tech.v3.dataset :as ds])
 
   (:import
    [smile.data DataFrame]
    [smile.data.vector ValueVector IntVector NullableIntVector NullableBooleanVector
     ObjectVector NullableFloatVector NullableLongVector NullableCharVector NullableByteVector
-    StringVector]
-   [smile.datasets CPU]))
+    StringVector]))
 
 
-(defn value-vector->column [vv-column]
+(defn- value-vector->column [vv-column]
   (let [vv-type
         (.. vv-column dtype id name)
         col-name (.name vv-column)
@@ -58,7 +56,7 @@
       %)
    col))
 
-(defn construct [klass & args]
+(defn- construct [klass & args]
   (clojure.lang.Reflector/invokeConstructor klass (into-array Object args)))
 
 (def transformers
@@ -73,7 +71,7 @@
    :int8       [smile.data.vector.NullableByteVector byte-array 0]
    })
 
-(defn col->value-vector [col]
+(defn- col->value-vector [col]
   (let [bs (java.util.BitSet.)
         col-name (str (-> col meta :name))
         datatype (-> col meta :datatype)
@@ -106,7 +104,6 @@
                (map
                 (fn [col]
                   (col->value-vector col))
-
                 (ds/columns ds)))))
 
 
@@ -118,6 +115,7 @@
 
 
 (comment
+  (require '[smile.datasets CPU])
   (def iris
     (scicloj.metamorph.ml.toydata/iris-ds))
   

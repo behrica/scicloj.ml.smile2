@@ -1,8 +1,7 @@
 (ns scicloj.ml.smile2.smile2
-  (:require ;[tech.v3.libs.smile.data]
- ;[smile.classification :as classification]
+  (:require 
    [scicloj.metamorph.ml :as ml]
-   [tech.v3.dataset :as ds] ;[tech.v3.libs.smile.data]
+   [tech.v3.dataset :as ds] 
    [scicloj.ml.smile2.dataframe]
    [smile.classification]
 
@@ -38,7 +37,7 @@
            (int-array (-> target-ds vals first))
            model-params)})
 
-(defn predict-from-formula [model-data ds]
+(defn- predict-from-formula [model-data ds]
   (let [df (scicloj.ml.smile2.dataframe/ds->df   
             (cf/feature ds))]
     (.predict (:model model-data) df)))
@@ -56,7 +55,7 @@
   
   
 
-(defn define-smile-model! [var-definition default-options]
+(defn- define-smile-model! [var-definition default-options]
    
   (let [model-type (keyword "smile2.classification" (name (:symbol var-definition)))]
     (ml/define-model! model-type
