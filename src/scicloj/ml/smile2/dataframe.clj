@@ -1,9 +1,7 @@
 (ns scicloj.ml.smile2.dataframe
   (:require
-   [clojure.java.io :as io]
-   [scicloj.metamorph.ml.toydata]
    [tech.v3.dataset :as ds]
-   [tech.v3.datatype :as dt])
+   )
 
   (:import
    [smile.data DataFrame]
@@ -35,11 +33,15 @@
           "Short" (stream-seq! (.intStream vv-column))
           )
         ]
+    (def vv-column vv-column)
     (if (contains? #{"Object","String"} vv-type)
       (ds/new-column col-name the-seq)
       
       (ds/new-column col-name the-seq {} 
-                     (stream-seq! (.stream (.getNullMask vv-column)))
+                     (if (.isNullable vv-column)
+                       (stream-seq! (.stream (.getNullMask vv-column)))
+                       nil
+                       )
                      ))))
 
 (defn df->ds [df]
@@ -127,6 +129,11 @@
              (io/file "cpu.arff")))))
   
 
+  (def cpu-with-null
+    (.data (CPU.
+            (.toPath
+             (io/file "cpu_with_null.arff")))))
+  
 
   (-> iris
       ds->df
@@ -134,38 +141,8 @@
   
 
   (df->ds cpu)
+
+  (df->ds cpu-with-null)
   )
 
 
-(comment
-  (import '[smile.data.type StructField]
-          '[smile.data.type DoubleType]
-          '[smile.data.type DataType])
-  
-  (def col
-    (->
-     (scicloj.metamorph.ml.toydata/iris-ds)
-     :sepal_width))
-  
-  (def vv
-    (reify ValueVector
-      (field [this]
-        (StructField.
-         (-> col meta :name str)
-         (DataType/of DoubleType)))
-      (size [this]
-        (dt/ecount col))
-      (getInt [this i]
-        (int
-         (dt/get-value col i)))
-      (getDouble [this i]
-        (dt/cast
-         (dt/get-value col i)))
-      (get [this ^int i]
-        (dt/get-value col i))))
-  
-  (def df
-    (DataFrame. (into-array [vv])))
-
-  
-  )

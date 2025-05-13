@@ -2,7 +2,6 @@
   (:require ;[tech.v3.libs.smile.data]
  ;[smile.classification :as classification]
    [scicloj.metamorph.ml :as ml]
-   [scicloj.metamorph.ml.toydata]
    [tech.v3.dataset :as ds] ;[tech.v3.libs.smile.data]
    [scicloj.ml.smile2.dataframe]
    [smile.classification]
@@ -10,10 +9,7 @@
    [tech.v3.dataset.column-filters :as cf])
   (:import
    [smile.base.cart SplitRule]
-   [smile.classification MLP]
-   [smile.data DataFrame]
-   (smile.data.formula Formula)
-   [smile.data.vector DoubleVector ValueVector]))
+   (smile.data.formula Formula)))
 
 
 (defn- train-with-formula [feature-ds target-ds train-fn model-params]
