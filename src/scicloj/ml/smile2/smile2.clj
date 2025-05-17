@@ -128,7 +128,7 @@
                 :x-y (predit-from-x-y (:model model-data) feature-ds))]
           
           (ds/new-dataset
-           [( ds/new-column (keyword (first target-columns))
+           [( ds/new-column  (first target-columns)
               prediction
               {:column-type :prediction})
             ]))

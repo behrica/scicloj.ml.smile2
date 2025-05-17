@@ -9,6 +9,7 @@
    [tech.v3.dataset.column-filters :as cf]
    [tech.v3.dataset.modelling :as ds-mod])
   (:import
+   [smile.math.kernel HellingerKernel]
    [smile.classification MLP]
    [smile.math TimeFunction]
    [smile.base.mlp
@@ -39,13 +40,25 @@
     (is (= {0 50, 1 50, 2 50}
            (frequencies (:species (ml/predict iris m)))))))
 
-(defn- validate-test-train [model-name params]
-  (let [m (ml/train iris
-                    (assoc params
-                           :model-type (keyword
-                                        (str "smile2.classification/" model-name))))]
-    (is (= 150
-           (count (:species (ml/predict iris m)))))))
+
+(defn- validate-test-train 
+  
+  ( [model-name params ds target-col]
+   
+   (let [m (ml/train ds
+                     (assoc params
+                            :model-type (keyword
+                                         (str "smile2.classification/" model-name))))]
+
+     (def m m)
+     (def ds ds)
+     (def target-col target-col)
+     (is (= (ds/row-count ds)
+            (count (get (ml/predict ds m) target-col))))))
+  ([model-name params]
+   (validate-test-train model-name params iris :species)
+   )
+  )
 
 (def hidden-layer-builder
   (HiddenLayerBuilder. 1 1.0 (ActivationFunction/linear)))
@@ -171,3 +184,29 @@
                             0.1
                             )
   )
+
+
+(deftest svm
+
+  (let [ breast-cancer
+        (->
+         (ds/->dataset "resources/breastcancer.csv")
+         (ds/categorical->number ["diagnosis"])
+         (ds/update-column "diagnosis"
+                           (fn [col]
+                             (map
+                              #(case %
+                                 0 +1
+                                 1 -1)
+                              col)))
+         
+         (ds-mod/set-inference-target "diagnosis"))]
+    (validate-test-train "svm" {:kernel (HellingerKernel.)
+                                :C 100.0}
+                         breast-cancer
+                         "diagnosis")))
+
+
+
+  
+  
