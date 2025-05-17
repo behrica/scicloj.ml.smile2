@@ -66,7 +66,7 @@
                       (:p options)
                       (into-array (map int-array (-> feature-ds ds/rowvecs)))
                       (int-array (-> target-ds vals first))
-                      (rest model-params)
+                      model-params
                       )})
 
   
@@ -79,7 +79,12 @@
       (fn [feature-ds target-ds options]
         (let [supported-options
               (map keyword
-                   (drop 2 (:args-with-options var-definition)))
+                   (drop 
+                    (case model-type
+                      :smile2.classification/maxent 3
+                      2) 
+                    
+                    (:args-with-options var-definition)))
               train-fn (-> var-definition :var)
               model-params
               (map
@@ -89,20 +94,22 @@
 
           
 
-          (def default-options default-options)
-          (def supported-options supported-options)
-          (def options options)
-          (def var-definition var-definition)
-          (def model-params model-params)
-          (def feature-ds feature-ds)
-          (def target-ds target-ds)
-
-          (def train-fn train-fn)
+          (comment 
+            (def default-options default-options)
+            (def supported-options supported-options)
+            (def options options)
+            (def var-definition var-definition)
+            (def model-params model-params)
+            (def feature-ds feature-ds)
+            (def target-ds target-ds)
+            (def model-type model-type)
+            (def train-fn train-fn)
+            )
           
           (cond 
             (= (:var var-definition) #'smile.classification/maxent)
             (let [reduced-model-params (dissoc options :p)]
-              (def reduced-model-params reduced-model-params)
+              ;(def reduced-model-params reduced-model-params)
               (train-maxent options feature-ds target-ds model-params))
             
             :else
@@ -161,7 +168,7 @@
    'knn [1]
    'logit [0.0 1E-5 500]
    'lda [nil 0.0001]
-   'maxent [nil 0.1 1E-5 500] ;p
+   'maxent [ 0.1 1E-5 500] ;p
    'qda [nil 0.0001]})
 
 
