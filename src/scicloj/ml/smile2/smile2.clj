@@ -52,6 +52,23 @@
 
                         ds/rowvecs)))))
 
+(defn- predict-maxent [model-data feature-ds]
+  (.predict
+                         (:model model-data)
+                         (into-array (map int-array
+                                          (-> feature-ds
+                                              ds/rowvecs)))))
+
+(defn- train-maxent [options feature-ds target-ds model-params]
+  {:train-type :maxent
+               :model 
+               (apply smile.classification/maxent 
+                      (:p options)
+                      (into-array (map int-array (-> feature-ds ds/rowvecs)))
+                      (int-array (-> target-ds vals first))
+                      (rest model-params)
+                      )})
+
   
   
 
@@ -72,9 +89,28 @@
 
           
 
-          (case (vec (take 2 (:args-with-options var-definition)))
-            [formula data] (train-with-formula feature-ds target-ds train-fn model-params)
-            [x y] (train-with-x-y feature-ds target-ds train-fn model-params)))
+          (def default-options default-options)
+          (def supported-options supported-options)
+          (def options options)
+          (def var-definition var-definition)
+          (def model-params model-params)
+          (def feature-ds feature-ds)
+          (def target-ds target-ds)
+
+          (def train-fn train-fn)
+          
+          (cond 
+            (= (:var var-definition) #'smile.classification/maxent)
+            (let [reduced-model-params (dissoc options :p)]
+              (def reduced-model-params reduced-model-params)
+              (train-maxent options feature-ds target-ds model-params))
+            
+            :else
+            (let [first-wto-arguments (vec (take 2 (:args-with-options var-definition)))]
+              (case first-wto-arguments
+                [formula data] (train-with-formula feature-ds target-ds train-fn model-params)
+                [x y] (train-with-x-y feature-ds target-ds train-fn model-params)))
+            ))
         
         )
       (fn [feature-ds thawed-model {:keys [options model-data target-categorical-maps target-columns] :as model}]
@@ -87,6 +123,7 @@
 
               prediction
               (case (:train-type model-data)
+                :maxent (predict-maxent model-data feature-ds)
                 :formula (predict-from-formula model-data feature-ds)
                 :x-y (predit-from-x-y (:model model-data) feature-ds))]
           

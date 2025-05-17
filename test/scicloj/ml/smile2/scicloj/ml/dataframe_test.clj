@@ -6,13 +6,12 @@
    [tech.v3.dataset :as ds]))
 
 (defn- validate-round-trip [ds]
-  (is (= ds
-         (-> ds
+  (let [round-tripped
 
-             (dataframe/ds->df)
-             
-             (dataframe/df->ds)))))
-
+        (-> ds
+            (dataframe/ds->df)
+            (dataframe/df->ds))]
+    (is (= ds round-tripped))))
 
 
 
@@ -77,6 +76,8 @@
                   "k1" [\a \b nil]
                   "l" (byte-array (map byte [0 1 2]))
                   "m" (short-array (map short [0 1 2]))
+                  "n" [:a :b :c]
+                  "o" [{:foo 1} {:bar 2} {:baz 3}]
 
                   })))
 
